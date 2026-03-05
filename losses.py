@@ -5,17 +5,17 @@ resume: -1 #  -1: start from scratch, 0: resume from the latest checkpoint, 1: r
 # data settings
 datasets:
   train:
-    name: TTUNET_train
+    name: ReBotNet_train
     type: GOPRO_Large
     gt_dir: /workspace/GOPRO_Large/train/*/sharp
     input_dir: /workspace/GOPRO_Large/train/*/blur
     repeat: 160
-    crop_size: 256
-    frame_crop_size: 16
+    crop_size: 384
+    frame_crop_size: 2
     augment: true
 
     # data loader settings
-    batch_size: 4
+    batch_size: 2
     num_workers: 4
 
   val:
@@ -24,8 +24,8 @@ datasets:
     repeat: 1
     batch_size: 1
     num_workers: 4
-    crop_size: 256
-    frame_crop_size: 16
+    crop_size: 384
+    frame_crop_size: 2
   
   test:
     gt_dir: /workspace/GOPRO_Large/test/*/sharp
@@ -33,16 +33,14 @@ datasets:
     repeat: 1
     batch_size: 1
     num_workers: 4
-    crop_size: 256
-    frame_crop_size: 16
+    crop_size: 384
+    frame_crop_size: 2
     
 model:
-  type: TTUNET 
+  type: ReBotNet
   in_channels: 3
-  out_channels: 3
   debug: true 
   checkpoint: true 
-
 
 
 # training settings
@@ -51,13 +49,18 @@ train:
     epochs: 1000
     warmup_iter: -1 # no warm up
     use_grad_clip: true
-    grad_norm: !!float 1e-4
+    grad_norm: !!float  0.01
     AMP: true
 
+  # Split 300k iterations into two cycles. 
+  # 1st cycle: fixed 3e-4 LR for 92k iters. 
+  # 2nd cycle: cosine annealing (3e-4 to 1e-6) for 208k iters.
   scheduler:
-    type: CosineAnnealingLR
-    T_max: 100
-    eta_min: !!float 1e-6
+    type: MultiStepLR
+    milestones: [120, 180, 240, 270]
+    gamma: 0.5
+
+
 
   optimizer:
     type: AdamW
@@ -68,7 +71,7 @@ train:
 
   # losses
   pixel_opt:
-    type: L1Loss
+    type: CharbonnierLoss
     # loss앞에 곱해지는 weight값
     loss_weight: 1
     # output의 sum을 할지, mean을 할지, none을 할지(이러면 아마도 batch 개수만큼의 값을 가진 vector로 return되는 듯?)
@@ -80,5 +83,5 @@ test:
   test_every: 100
   metrics: [RMSE, PSNR]
   crop: true
-  tile: [16, 256, 256]
+  tile: [2, 384, 384]
   tile_overlap: [0, 10, 0]

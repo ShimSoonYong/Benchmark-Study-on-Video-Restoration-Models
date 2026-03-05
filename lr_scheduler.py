@@ -1,17 +1,16 @@
 # general settings
 name: TRAIN_OPS
-data_dim: 3
+data_dim: 2
 resume: -1 #  -1: start from scratch, 0: resume from the latest checkpoint, 1: resume from best checkpoint
 # data settings
 datasets:
   train:
-    name: TTUNET_train
+    name: KernelWizard_train
     type: GOPRO_Large
     gt_dir: /workspace/GOPRO_Large/train/*/sharp
     input_dir: /workspace/GOPRO_Large/train/*/blur
     repeat: 160
     crop_size: 256
-    frame_crop_size: 16
     augment: true
 
     # data loader settings
@@ -25,7 +24,6 @@ datasets:
     batch_size: 1
     num_workers: 4
     crop_size: 256
-    frame_crop_size: 16
   
   test:
     gt_dir: /workspace/GOPRO_Large/test/*/sharp
@@ -34,16 +32,26 @@ datasets:
     batch_size: 1
     num_workers: 4
     crop_size: 256
-    frame_crop_size: 16
     
 model:
-  type: TTUNET 
-  in_channels: 3
-  out_channels: 3
-  debug: true 
-  checkpoint: true 
-
-
+  type: KernelWizard
+  input_nc: 3
+  nf: 64
+  front_RBs: 10
+  back_RBs: 20
+  N_frames: 1
+  kernel_dim: 512
+  img_size: 256
+  use_vae: false
+  KernelExtractor:
+    norm: none
+    use_sharp: true
+    n_blocks: 4
+    padding_type: reflect
+    use_dropout: false
+  Adapter:
+    norm: none
+    use_dropout: false
 
 # training settings
 train:
@@ -51,13 +59,18 @@ train:
     epochs: 1000
     warmup_iter: -1 # no warm up
     use_grad_clip: true
-    grad_norm: !!float 1e-4
+    grad_norm: !!float 0.01
     AMP: true
 
+  # Split 300k iterations into two cycles. 
+  # 1st cycle: fixed 3e-4 LR for 92k iters. 
+  # 2nd cycle: cosine annealing (3e-4 to 1e-6) for 208k iters.
   scheduler:
-    type: CosineAnnealingLR
-    T_max: 100
-    eta_min: !!float 1e-6
+    type: MultiStepLR
+    milestones: [120, 180, 240, 270]
+    gamma: 0.5
+
+
 
   optimizer:
     type: AdamW
@@ -77,8 +90,10 @@ train:
 # test settings
 test:
   save_img: false
-  test_every: 100
+  test_every: 1
   metrics: [RMSE, PSNR]
   crop: true
-  tile: [16, 256, 256]
+  tile: [1, 256, 256]
   tile_overlap: [0, 10, 0]
+
+  
