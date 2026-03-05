@@ -95,8 +95,7 @@ It achieved the most reliable performance among the deblurring models.
 - It outperformed ReBotNet, positioning itself as a strong candidate for practical deployment.
 
 ### Key Findings
-
-https://github.com/user-attachments/assets/af45c1be-cd2e-46d1-88e1-0f1b8021cfba
+![comparison_deblur](https://github.com/user-attachments/assets/f49caf42-38f1-46c0-bc7b-e8e72563054e)
 
 Balanced Trade-off:
 - Evaluated as the model achieving the most optimal balance between restoration quality (PSNR) and inference latency, making it a strong candidate for practical deployment.
