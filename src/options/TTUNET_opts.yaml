@@ -1,0 +1,84 @@
+# general settings
+name: TRAIN_OPS
+data_dim: 3
+resume: -1 #  -1: start from scratch, 0: resume from the latest checkpoint, 1: resume from best checkpoint
+# data settings
+datasets:
+  train:
+    name: TTUNET_train
+    type: GOPRO_Large
+    gt_dir: /workspace/GOPRO_Large/train/*/sharp
+    input_dir: /workspace/GOPRO_Large/train/*/blur
+    repeat: 160
+    crop_size: 256
+    frame_crop_size: 16
+    augment: true
+
+    # data loader settings
+    batch_size: 4
+    num_workers: 4
+
+  val:
+    gt_dir: /workspace/GOPRO_Large/test/*/sharp
+    input_dir: /workspace/GOPRO_Large/test/*/blur
+    repeat: 1
+    batch_size: 1
+    num_workers: 4
+    crop_size: 256
+    frame_crop_size: 16
+  
+  test:
+    gt_dir: /workspace/GOPRO_Large/test/*/sharp
+    input_dir: /workspace/GOPRO_Large/test/*/blur
+    repeat: 1
+    batch_size: 1
+    num_workers: 4
+    crop_size: 256
+    frame_crop_size: 16
+    
+model:
+  type: TTUNET 
+  in_channels: 3
+  out_channels: 3
+  debug: true 
+  checkpoint: true 
+
+
+
+# training settings
+train:
+  details:
+    epochs: 1000
+    warmup_iter: -1 # no warm up
+    use_grad_clip: true
+    grad_norm: !!float 1e-4
+    AMP: true
+
+  scheduler:
+    type: CosineAnnealingLR
+    T_max: 100
+    eta_min: !!float 1e-6
+
+  optimizer:
+    type: AdamW
+    lr: !!float 1e-4
+    weight_decay: 0
+    betas: [0.9, 0.999]   
+  
+
+  # losses
+  pixel_opt:
+    type: L1Loss
+    # loss앞에 곱해지는 weight값
+    loss_weight: 1
+    # output의 sum을 할지, mean을 할지, none을 할지(이러면 아마도 batch 개수만큼의 값을 가진 vector로 return되는 듯?)
+    reduction: mean
+
+# test settings
+test:
+  save_img: false
+  test_every: 100
+  metrics: [RMSE, PSNR]
+  crop: true
+  tile: [16, 256, 256]
+  tile_overlap: [0, 10, 0]
